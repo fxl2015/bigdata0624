@@ -1,0 +1,47 @@
+http://www.cnblogs.com/mouseIT/p/5288204.html
+
+
+1,安装ruby环境
+redis集群管理工具redis-trib.rb依赖ruby环境，首先需要安装ruby环境：
+
+安装ruby
+yum install ruby
+yum install rubygems
+
+安装ruby和redis的接口程序（需要安装文件redis-3.0.0.gem）
+拷贝redis-3.0.0.gem至/usr/local下
+执行：
+gem install /usr/local/redis-3.0.0.gem
+
+
+2,集群节点的规划
+
+这里在同一台服务器用不同的端口表示不同的redis服务器，如下：
+主节点：192.168.198.130:7001 192.168.198.130:7002 192.168.198.130:7003
+从节点：192.168.198.130:7004 192.168.198.130:7005 192.168.198.130:7006
+在/usr/local下创建redis-cluster目录，其下创建7001、7002。。7006目录
+
+将redis安装目录bin下的文件拷贝到每个700X目录内，同时修改每个的redis.conf中的端口为7001-7006，同时释放出redis.conf中的注释的
+port 7001...7006
+cluster-enabled yes
+bind 192.168.56.128
+daemonize yes
+
+同时将redis源码目录src下的redis-trib.rb拷贝到redis-cluster目录下
+
+使用后台启动的方式启动每个redis
+执行redis-trib.rb，此脚本是ruby脚本，它依赖ruby环境
+./redis-trib.rb create --replicas 1 192.168.56.128:7001 192.168.56.128:7002 192.168.56.128:7003 192.168.56.128:7004 192.168.56.128:7005 192.168.56.128:7006
+
+
+使用客户端进行链接测试:
+./redis-cli -h 192.168.56.128 -p 7001 -c
+
+查看集群状态信息:
+cluster info
+
+查看集群节点信息:
+cluster nodes
+
+添加7007为master主节点:
+./redis-trib.rb add-node  192.168.198.130:7007 192.168.198.130:7001
